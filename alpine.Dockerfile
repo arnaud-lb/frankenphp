@@ -6,7 +6,9 @@ WORKDIR /app
 RUN apk add --no-cache \
 	ca-certificates \
 	libcap \
-	mailcap
+	mailcap \
+    mimalloc \
+    jemalloc
 
 RUN set -eux; \
 	mkdir -p \
