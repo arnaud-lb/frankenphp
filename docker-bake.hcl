@@ -28,14 +28,18 @@ variable DEFAULT_PHP_VERSION {
     default = "8.3"
 }
 
+variable "USE_UPX" {
+    default = "yes"
+}
+
 function "tag" {
-    params = [version, os, php-version, tgt]
+    params = [version, os, php-version, tgt, upx]
     result = [
-        version != "" ? format("%s:%s%s-php%s-%s", IMAGE_NAME, version, tgt == "builder" ? "-builder" : "", php-version, os) : "",
-        php-version == DEFAULT_PHP_VERSION && os == "bookworm"  && version != "" ? format("%s:%s%s", IMAGE_NAME, version, tgt == "builder" ? "-builder" : "") : "",
-        php-version == DEFAULT_PHP_VERSION && version != "" ? format("%s:%s%s-%s", IMAGE_NAME, version, tgt == "builder" ? "-builder" : "", os) : "",
-        php-version == DEFAULT_PHP_VERSION && version == "latest" ? format("%s:%s%s", IMAGE_NAME, os, tgt == "builder" ? "-builder" : "") : "",
-        os == "bookworm" && version != "" ? format("%s:%s%s-php%s", IMAGE_NAME, version, tgt == "builder" ? "-builder" : "", php-version) : "",
+        version != "" ? format("%s:%s%s-php%s-%s%s", IMAGE_NAME, version, tgt == "builder" ? "-builder" : "", php-version, os, upx == "no" ? "-noupx" : "") : "",
+        php-version == DEFAULT_PHP_VERSION && os == "bookworm"  && version != "" ? format("%s:%s%s%s", IMAGE_NAME, version, tgt == "builder" ? "-builder" : "", upx == "no" ? "-noupx" : "") : "",
+        php-version == DEFAULT_PHP_VERSION && version != "" ? format("%s:%s%s-%s%s", IMAGE_NAME, version, tgt == "builder" ? "-builder" : "", os, upx == "no" ? "-noupx" : "") : "",
+        php-version == DEFAULT_PHP_VERSION && version == "latest" ? format("%s:%s%s%s", IMAGE_NAME, os, tgt == "builder" ? "-builder" : "", upx == "no" ? "-noupx" : "") : "",
+        os == "bookworm" && version != "" ? format("%s:%s%s-php%s%s", IMAGE_NAME, version, tgt == "builder" ? "-builder" : "", php-version, upx == "no" ? "-noupx" : "") : "",
     ]
 }
 
@@ -74,11 +78,12 @@ function "_php_version" {
 }
 
 target "default" {
-    name = "${tgt}-php-${replace(php-version, ".", "-")}-${os}"
+    name = "${tgt}-php-${replace(php-version, ".", "-")}-${os}-${upx}"
     matrix = {
         os = ["bookworm", "alpine"]
         php-version = split(",", PHP_VERSION)
         tgt = ["builder", "runner"]
+        upx = ["yes", "no"]
     }
     contexts = {
         php-base = "docker-image://php:${php-version}-zts-${os}"
@@ -102,9 +107,9 @@ target "default" {
     ]
     tags = distinct(flatten(
         [for pv in php_version(php-version) : flatten([
-            LATEST ? tag("latest", os, pv, tgt) : [],
-            tag(SHA == "" ? "" : "sha-${substr(SHA, 0, 7)}", os, pv, tgt),
-            [for v in semver(VERSION) : tag(v, os, pv, tgt)]
+            LATEST ? tag("latest", os, pv, tgt, upx) : [],
+            tag(SHA == "" ? "" : "sha-${substr(SHA, 0, 7)}", os, pv, tgt, upx),
+            [for v in semver(VERSION) : tag(v, os, pv, tgt, upx)]
         ])
     ]))
     labels = {
@@ -114,6 +119,7 @@ target "default" {
     }
     args = {
         FRANKENPHP_VERSION = VERSION
+        USE_UPX = upx
     }
 }
 
