@@ -45,7 +45,7 @@ LABEL org.opencontainers.image.vendor="Kévin Dunglas"
 FROM common AS builder
 
 ARG FRANKENPHP_VERSION='dev'
-ARG USE_UPX='yes'
+ARG USE_UPX='upx'
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 COPY --link --from=golang-base /usr/local/go /usr/local/go
@@ -90,9 +90,9 @@ COPY --link testdata testdata
 ENV CGO_LDFLAGS="-lssl -lcrypto -lreadline -largon2 -lcurl -lonig -lz  $PHP_LDFLAGS" CGO_CFLAGS="-DFRANKENPHP_VERSION=$FRANKENPHP_VERSION $PHP_CFLAGS" CGO_CPPFLAGS=$PHP_CPPFLAGS
 
 WORKDIR /go/src/app/caddy/frankenphp
-RUN GOBIN=/usr/local/bin go install -ldflags "-w -extldflags '-Wl,-z,stack-size=0x80000' -X 'github.com/caddyserver/caddy/v2.CustomVersion=FrankenPHP $FRANKENPHP_VERSION PHP $PHP_VERSION Caddy'" && \
+RUN GOBIN=/usr/local/bin go install -ldflags "-w -s -extldflags '-Wl,-z,stack-size=0x80000' -X 'github.com/caddyserver/caddy/v2.CustomVersion=FrankenPHP $FRANKENPHP_VERSION PHP $PHP_VERSION Caddy'" && \
 	setcap cap_net_bind_service=+ep /usr/local/bin/frankenphp && \
-	if [ "${USE_UPX}" = "yes" ]; then upx --best /usr/local/bin/frankenphp; fi && \
+	if [ "${USE_UPX}" = "upx" ]; then upx --best /usr/local/bin/frankenphp; fi && \
 	frankenphp version
 
 WORKDIR /go/src/app

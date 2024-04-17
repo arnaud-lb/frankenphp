@@ -29,17 +29,17 @@ variable DEFAULT_PHP_VERSION {
 }
 
 variable "USE_UPX" {
-    default = "yes"
+    default = "upx"
 }
 
 function "tag" {
     params = [version, os, php-version, tgt, upx]
     result = [
-        version != "" ? format("%s:%s%s-php%s-%s%s", IMAGE_NAME, version, tgt == "builder" ? "-builder" : "", php-version, os, upx == "no" ? "-noupx" : "") : "",
-        php-version == DEFAULT_PHP_VERSION && os == "bookworm"  && version != "" ? format("%s:%s%s%s", IMAGE_NAME, version, tgt == "builder" ? "-builder" : "", upx == "no" ? "-noupx" : "") : "",
-        php-version == DEFAULT_PHP_VERSION && version != "" ? format("%s:%s%s-%s%s", IMAGE_NAME, version, tgt == "builder" ? "-builder" : "", os, upx == "no" ? "-noupx" : "") : "",
-        php-version == DEFAULT_PHP_VERSION && version == "latest" ? format("%s:%s%s%s", IMAGE_NAME, os, tgt == "builder" ? "-builder" : "", upx == "no" ? "-noupx" : "") : "",
-        os == "bookworm" && version != "" ? format("%s:%s%s-php%s%s", IMAGE_NAME, version, tgt == "builder" ? "-builder" : "", php-version, upx == "no" ? "-noupx" : "") : "",
+        version != "" ? format("%s:%s%s-php%s-%s%s", IMAGE_NAME, version, tgt == "builder" ? "-builder" : "", php-version, os, upx == "no-upx" ? "-no-upx" : "") : "",
+        php-version == DEFAULT_PHP_VERSION && os == "bookworm"  && version != "" ? format("%s:%s%s%s", IMAGE_NAME, version, tgt == "builder" ? "-builder" : "", upx == "no-upx" ? "-no-upx" : "") : "",
+        php-version == DEFAULT_PHP_VERSION && version != "" ? format("%s:%s%s-%s%s", IMAGE_NAME, version, tgt == "builder" ? "-builder" : "", os, upx == "no-upx" ? "-no-upx" : "") : "",
+        php-version == DEFAULT_PHP_VERSION && version == "latest" ? format("%s:%s%s%s", IMAGE_NAME, os, tgt == "builder" ? "-builder" : "", upx == "no-upx" ? "-no-upx" : "") : "",
+        os == "bookworm" && version != "" ? format("%s:%s%s-php%s%s", IMAGE_NAME, version, tgt == "builder" ? "-builder" : "", php-version, upx == "no-upx" ? "-no-upx" : "") : "",
     ]
 }
 
@@ -83,10 +83,10 @@ target "default" {
         os = ["bookworm", "alpine"]
         php-version = split(",", PHP_VERSION)
         tgt = ["builder", "runner"]
-        upx = ["yes", "no"]
+        upx = ["upx", "no-upx"]
     }
     contexts = {
-        php-base = "docker-image://php:${php-version}-zts-${os}"
+        php-base = format("docker-image://php:${php-version}-zts-%s-dbgsym", os)
         golang-base = "docker-image://golang:${GO_VERSION}-${os}"
     }
     dockerfile = os == "alpine" ? "alpine.Dockerfile" : "Dockerfile"
